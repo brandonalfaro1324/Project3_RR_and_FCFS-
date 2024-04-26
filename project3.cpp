@@ -3,7 +3,7 @@
 #include <unistd.h>     // POSIX operating system calls
 #include <fstream>      // For getting Input/Output files
 #include <string.h>     // Including String 
-#include <queue>        // Using Queue to keep track of Jobs
+#include <vector>       // Using vectors to store Jobs
 
 using std::string;
 using std::ifstream;
@@ -12,8 +12,7 @@ using std::ios;
 using std::cout;
 using std::endl;
 
-using std::queue;
-
+using std::vector;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -25,16 +24,40 @@ struct Jobs_{
     char job_id;
     int starting_time;
     int duration_time;
+
+    // Variables that we may need.
+    int finish_time;
+    int turnaround_time;
+
 };
 ////////////////////////
 
 
 ////////////////////////
-// Class is used to create Jobs and push them in a Queue to keep track
+// Class is used to create Jobs and push them in a Vector to keep track
 class Job_Tracker{
     public:
+
+    Job_Tracker(){
+        total_jobs = 0;
+    }
+
+    // De-allocate Struct objects from Vector
+    ~Job_Tracker(){
+
+        // Loop trough until everything has been de-allocate
+        for(int i = 0; i < stacking_jobs.size(); i++){
+            
+            Jobs_ *tmp_var = stacking_jobs[i];
+            //cout << "DELETING DATA: " << tmp_var->job_id << " - Starting Time: " << tmp_var->starting_time << " - Duration Time: " << tmp_var->duration_time << endl;
+
+
+            delete tmp_var;
+        }
+    }
     
-    // add_job() Allocates jobs and pushes them in Queue
+
+    // add_job() Allocates jobs and pushes them in Vector
     void add_job(string data_coming_in){
 
         // Create variable to store Job's ID 
@@ -68,36 +91,45 @@ class Job_Tracker{
             }
         }
         
-        // Allocate "Jobs_" and store ID and numbers, then push to Queue
+        total_jobs += 1;
+
+        // Allocate "Jobs_" and store ID and numbers, then push to Vector
         Jobs_ *allocating_jobs = new Jobs_;
         allocating_jobs->job_id = job_id;
         allocating_jobs->starting_time = job_values[0];
         allocating_jobs->duration_time = job_values[1];
 
-        stacking_jobs.push(allocating_jobs);
+        stacking_jobs.push_back(allocating_jobs);
     }
 
-    // De-allocate Struct objects from Queue
-    ~Job_Tracker(){
 
-        // Loop trough until everything has been de-allocated
-        while(stacking_jobs.size() != 0){
-            Jobs_ *tmp_var = stacking_jobs.front();
+    // Current index of vector
+    Jobs_ *Job_Service_Time(int vector_index){
+        return stacking_jobs[vector_index];
+    } 
 
-            cout << "DELETING DATA: " << tmp_var->job_id << " - " << tmp_var->starting_time << " - " << tmp_var->duration_time << endl;
-            delete tmp_var;
-            stacking_jobs.pop();
-        }
+    // Total number of jobs in vector
+    int Total_Jobs(){
+        return total_jobs;
+
     }
 
+    // Variables needed for class
     private:
-    queue <Jobs_ *> stacking_jobs;
+    int total_jobs;
+    vector <Jobs_ *> stacking_jobs;
 };
 ////////////////////////
 
 ////////////////////////
-bool Check_Correct_Input(int, string, Job_Tracker);
+bool Check_Correct_Input(int, string, Job_Tracker *);
+void FCFS(Job_Tracker *);
+
+void FF(Job_Tracker *);
+
 ////////////////////////
+
+
 
 
 ////////////////////////////////////////////////
@@ -109,16 +141,18 @@ bool Check_Correct_Input(int, string, Job_Tracker);
 int main(int argc, char* argv[]) { 
 
 
-    Job_Tracker jobs;
+    Job_Tracker jobs_vector;
 
     // Collect Information
     string file_name = argv[1];
 
-    if(Check_Correct_Input(argc, file_name, jobs) != true){
+    if(Check_Correct_Input(argc, file_name, &jobs_vector) != true){
+        cout << "EXITING EARLY..." << endl;
         return 0;
     }
     
     // -----Begin work here----
+    FCFS(&jobs_vector);
 
 
     return 0;
@@ -129,7 +163,7 @@ int main(int argc, char* argv[]) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////
-bool Check_Correct_Input(int total_inputs, string file_name_exist, Job_Tracker jobs){
+bool Check_Correct_Input(int total_inputs, string file_name_exist, Job_Tracker *jobs_vector){
 
     // Return success signal back to main
     bool file_sucess = false;
@@ -145,7 +179,7 @@ bool Check_Correct_Input(int total_inputs, string file_name_exist, Job_Tracker j
         // File does exist, extract data from files line by line
         string string_element;
         while(getline(new_file, string_element)){
-            jobs.add_job(string_element);
+            jobs_vector->add_job(string_element);
         }
         // Return true for file success
         file_sucess = true;
@@ -159,8 +193,41 @@ bool Check_Correct_Input(int total_inputs, string file_name_exist, Job_Tracker j
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
+void FCFS(Job_Tracker *jobs_){
+
+    printf("\nFCFS\n\n");
+
+    // Total Serive Time counter
+    int current_service_timer = 0;
+
+    // Loop by total job counts
+    for(int i = 0; i < jobs_->Total_Jobs(); i++){
+        
+        // Get first element in job vector
+        Jobs_ *current_job = jobs_->Job_Service_Time(i);
+
+        // Print ID of job and print few the spaces needed to start X in below
+        printf("%c", current_job->job_id);
+        printf("%*c", current_service_timer+1, ' ');
+        
+        // Loop through the total number of Service Time and print X
+        for(int j = 0; j < current_job->duration_time; j++){
+            printf("X");
+        }
+        
+        // Print new line and update "current_service_timer"
+        printf("\n");
+        current_service_timer += current_job->duration_time;
+    }
+    printf("\n");
+}
 
 
+////////////////////////
+
+
+void FF(Job_Tracker *testing){
+}
 
 
 ////////////////////////////////////////////////
