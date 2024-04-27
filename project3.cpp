@@ -4,25 +4,17 @@
 #include <fstream>      // For getting Input/Output files
 #include <string.h>     // Including String 
 #include <vector>       // Using vectors to store Jobs
-
-#include <queue>
+#include <queue>        // Using queue for RR
 
 using std::string;
 using std::ifstream;
 using std::ios;
 
-using std::cout;
-using std::endl;
-
 using std::vector;
-
 using std::queue;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////
-
-
-
 ////////////////////////
 // Struct for Jobs being created
 struct Jobs_{
@@ -31,35 +23,30 @@ struct Jobs_{
     int duration_time;
 
     // Variables that we may need.
-    int finish_time;
-    int turnaround_time;
-
+    int total_process_time;
 };
 ////////////////////////
-
-
 
 ////////////////////////
 // Class is used to create Jobs and push them in a Vector to keep track
 class Job_Tracker{
+    
     public:
-
     Job_Tracker(){
         total_jobs = 0;
     }
+//////
 
     // De-allocate Struct objects from Vector
     ~Job_Tracker(){
 
         // Loop trough until everything has been de-allocate
         for(int i = 0; i < stacking_jobs.size(); i++){
-            
             Jobs_ *tmp_var = stacking_jobs[i];
-            //cout << "DELETING DATA: " << tmp_var->job_id << " - Starting Time: " << tmp_var->starting_time << " - Duration Time: " << tmp_var->duration_time << endl;
             delete tmp_var;
         }
     }
-    
+//////
 
     // add_job() Allocates jobs and pushes them in Vector
     void add_job(string data_coming_in){
@@ -102,31 +89,36 @@ class Job_Tracker{
         allocating_jobs->job_id = job_id;
         allocating_jobs->starting_time = job_values[0];
         allocating_jobs->duration_time = job_values[1];
+        allocating_jobs->total_process_time = 0;
 
         stacking_jobs.push_back(allocating_jobs);
     }
-
+//////
+    
     void Add_Tota_Time(int totaL_time){
         total_finish_time = totaL_time;
     }
-
+//////
+    
     int Get_Tota_Time(){
         return total_finish_time;
     }
-
+//////
 
     // Current index of vector
     Jobs_ *Job_Service_Time(int vector_index){
         return stacking_jobs[vector_index];
     } 
+//////
 
     // Total number of jobs in vector
     int Get_Tota_Jobs(){
         return total_jobs;
 
     }
+//////
 
-    // Variables needed for class
+    // Private Variables needed for class
     private:
     int total_finish_time;
     int total_jobs;
@@ -134,16 +126,14 @@ class Job_Tracker{
 };
 ////////////////////////
 
-
-
 ////////////////////////
+// Support functions
 bool Check_Correct_Input(int, string, Job_Tracker *);
+
+// Scheduling Algorithms
 void FCFS(Job_Tracker *);
 void FF(Job_Tracker *);
 ////////////////////////
-
-
-
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -152,18 +142,24 @@ void FF(Job_Tracker *);
 ////////////////////////////////////////////////
 int main(int argc, char* argv[]) { 
 
-
+    // Intialize Object
     Job_Tracker jobs_vector;
 
+    // Quit program is there is no 2 arguments
+    if(argc != 2){
+        printf("ERROR, NEEDS TWO ARGUMENTS...\n");
+        return 0;
+    }
+    
     // Collect Information
     string file_name = argv[1];
 
     if(Check_Correct_Input(argc, file_name, &jobs_vector) != true){
-        cout << "EXITING EARLY..." << endl;
+        printf("ERROR, FILE DOES NOT EXIST...\n");
         return 0;
     }
-    
-    // -----Begin work here----
+
+    // Begin Program
     FCFS(&jobs_vector);
     FF(&jobs_vector);
 
@@ -202,9 +198,9 @@ bool Check_Correct_Input(int total_inputs, string file_name_exist, Job_Tracker *
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////
-
 void FCFS(Job_Tracker *jobs_){
 
     printf("\nFCFS\n\n");
@@ -235,22 +231,13 @@ void FCFS(Job_Tracker *jobs_){
 
     // Add total time finish to class.
     jobs_->Add_Tota_Time(current_service_timer);
-
 }
-
-
-
-
-
-
-
-
 
 ////////////////////////
 
-
 void FF(Job_Tracker *jobs_){
 
+    // Create temp "Job_Tracker" onject to hold incoming class
     Job_Tracker *tmp_job = jobs_;
 
     // Intialize queue to hold jobs
@@ -260,58 +247,67 @@ void FF(Job_Tracker *jobs_){
     int total_jobs = tmp_job->Get_Tota_Jobs();
     int total_time = tmp_job->Get_Tota_Time() + 2;
 
+    // Intialize 2D array
     char grid[total_jobs][total_time];
 
-    // Push first Job to Queue
+    // Push first Job to Queue to begin process
     int current_job_index = 0;
     job_queue.push(tmp_job->Job_Service_Time(current_job_index++));
 
-
-    // Empty everything in array
+    // Add in Jod ID in first column of array and assign " " to each cell
     for(int i = 0; i < total_jobs; i++){
-        grid[i][0] = 'A';
-        grid[i][1] = 'B';
+        grid[i][0] = tmp_job->Job_Service_Time(i)->job_id;
+        grid[i][1] = ' ';
+
+        // Loop through row and assign " "
         for(int j = 2; j < total_time; j++){
-            grid[i][j] = '0';
+            grid[i][j] = ' ';
         }
-        cout << endl;
     }
 
-
-
-
+    // Skip column 1 and 2, Assign 'X' to other columns 
     for(int i = 2; i < total_time; i++){
 
+        // Get first Job from Queue and pop it
         Jobs_ *current_job = job_queue.front();
         job_queue.pop();
-       
-        // Collect data
-        // int array_location = 65 - current_job.job_id
-        int array_column = 65 - (int) current_job->job_id;
 
+        // Assign 'X' to correct row and column
+        int array_column = (int) current_job->job_id - 65;
         grid[array_column][i] = 'X';
-        // Check next job to do work
-        // 
-        job_queue.push(current_job);
+
+        // Intialize pointer and check if next Job exists
+        Jobs_ *check_next_job;
+
+        // If there are Jobs available, retrieve them
+        if(current_job_index < total_jobs){
+            check_next_job = tmp_job->Job_Service_Time(current_job_index);
+        }
+
+        // If the next job starting time is now, push next job 
+        // to Queue before current job is pushed
+        if(check_next_job->starting_time == i - 1){
+            job_queue.push(check_next_job);
+            current_job_index++;
+        }
+
+        // If current Job time has not pass over its duration, push it to Queue
+        if(current_job->total_process_time++ < current_job->duration_time - 1){
+            job_queue.push(current_job);
+        }
     }
 
-
-
-
-
-    
-    // Print statement to check results
+    // Print Array.    
+    printf("\nFF\n\n");
     for(int i = 0; i < total_jobs; i++){        
-        cout << grid[i][0];
-        cout << grid[i][1];
+        printf("%c", grid[i][0]);
+        printf("%c", grid[i][1]);
+
         for(int j = 2; j < total_time; j++){
-            cout << grid[i][j];
+            printf("%c", grid[i][j]);
         }
-        cout << endl;
+        printf("\n");
     }
 }
-
-
-
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
