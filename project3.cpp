@@ -5,6 +5,8 @@
 #include <string.h>     // Including String 
 #include <vector>       // Using vectors to store Jobs
 
+#include <queue>
+
 using std::string;
 using std::ifstream;
 using std::ios;
@@ -14,8 +16,11 @@ using std::endl;
 
 using std::vector;
 
+using std::queue;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////
+
 
 
 ////////////////////////
@@ -31,6 +36,7 @@ struct Jobs_{
 
 };
 ////////////////////////
+
 
 
 ////////////////////////
@@ -50,8 +56,6 @@ class Job_Tracker{
             
             Jobs_ *tmp_var = stacking_jobs[i];
             //cout << "DELETING DATA: " << tmp_var->job_id << " - Starting Time: " << tmp_var->starting_time << " - Duration Time: " << tmp_var->duration_time << endl;
-
-
             delete tmp_var;
         }
     }
@@ -102,6 +106,14 @@ class Job_Tracker{
         stacking_jobs.push_back(allocating_jobs);
     }
 
+    void Add_Tota_Time(int totaL_time){
+        total_finish_time = totaL_time;
+    }
+
+    int Get_Tota_Time(){
+        return total_finish_time;
+    }
+
 
     // Current index of vector
     Jobs_ *Job_Service_Time(int vector_index){
@@ -109,26 +121,26 @@ class Job_Tracker{
     } 
 
     // Total number of jobs in vector
-    int Total_Jobs(){
+    int Get_Tota_Jobs(){
         return total_jobs;
 
     }
 
     // Variables needed for class
     private:
+    int total_finish_time;
     int total_jobs;
     vector <Jobs_ *> stacking_jobs;
 };
 ////////////////////////
 
+
+
 ////////////////////////
 bool Check_Correct_Input(int, string, Job_Tracker *);
 void FCFS(Job_Tracker *);
-
 void FF(Job_Tracker *);
-
 ////////////////////////
-
 
 
 
@@ -153,7 +165,7 @@ int main(int argc, char* argv[]) {
     
     // -----Begin work here----
     FCFS(&jobs_vector);
-
+    FF(&jobs_vector);
 
     return 0;
 }
@@ -201,7 +213,7 @@ void FCFS(Job_Tracker *jobs_){
     int current_service_timer = 0;
 
     // Loop by total job counts
-    for(int i = 0; i < jobs_->Total_Jobs(); i++){
+    for(int i = 0; i < jobs_->Get_Tota_Jobs(); i++){
         
         // Get first element in job vector
         Jobs_ *current_job = jobs_->Job_Service_Time(i);
@@ -220,14 +232,85 @@ void FCFS(Job_Tracker *jobs_){
         current_service_timer += current_job->duration_time;
     }
     printf("\n");
+
+    // Add total time finish to class.
+    jobs_->Add_Tota_Time(current_service_timer);
+
 }
+
+
+
+
+
+
+
 
 
 ////////////////////////
 
 
-void FF(Job_Tracker *testing){
+void FF(Job_Tracker *jobs_){
+
+    Job_Tracker *tmp_job = jobs_;
+
+    // Intialize queue to hold jobs
+    queue<Jobs_ *> job_queue;
+    
+    // Intialize variables and array to print results
+    int total_jobs = tmp_job->Get_Tota_Jobs();
+    int total_time = tmp_job->Get_Tota_Time() + 2;
+
+    char grid[total_jobs][total_time];
+
+    // Push first Job to Queue
+    int current_job_index = 0;
+    job_queue.push(tmp_job->Job_Service_Time(current_job_index++));
+
+
+    // Empty everything in array
+    for(int i = 0; i < total_jobs; i++){
+        grid[i][0] = 'A';
+        grid[i][1] = 'B';
+        for(int j = 2; j < total_time; j++){
+            grid[i][j] = '0';
+        }
+        cout << endl;
+    }
+
+
+
+
+    for(int i = 2; i < total_time; i++){
+
+        Jobs_ *current_job = job_queue.front();
+        job_queue.pop();
+       
+        // Collect data
+        // int array_location = 65 - current_job.job_id
+        int array_column = 65 - (int) current_job->job_id;
+
+        grid[array_column][i] = 'X';
+        // Check next job to do work
+        // 
+        job_queue.push(current_job);
+    }
+
+
+
+
+
+    
+    // Print statement to check results
+    for(int i = 0; i < total_jobs; i++){        
+        cout << grid[i][0];
+        cout << grid[i][1];
+        for(int j = 2; j < total_time; j++){
+            cout << grid[i][j];
+        }
+        cout << endl;
+    }
 }
+
 
 
 ////////////////////////////////////////////////
